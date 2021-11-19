@@ -2,27 +2,34 @@
 #include <conio.h>
 #include <stdlib.h>
 
+#define MAX 5
+#define MAXPEDIDOS 99
+
+int count = 0;
+
 struct produto {
     int codProd;
     char descrProd[20];
     float custoProd;
-};
-
-struct produto reg;
+} reg, cardapio[MAX] = {
+    {0, "x-burguer", 7.34},
+    {1, "x-picanha", 8.777},
+    {2, "x-egg", 6.1},
+    {3, "cocacola", 9.0},
+    {4, "gasolina", 9999.9}};
 
 struct pedido {
-    int codProd;
     char descrProd[20];
-    float custoProd;
     int qntdProd;
     int nmPedido;
-};
-
-struct pedido pedido = {};
+    int codProd;
+    float custoProd;
+    float subtotal;
+    float total;
+} pedido[MAXPEDIDOS] = {0};
 
 int main()
 {
-    system("cls");
     void bemvindo(void);
     void escolherOpcao(void);
 
@@ -38,15 +45,16 @@ void bemvindo(void) {
 
     void verCardapio(void);
     printf("\n_______________________________________\n");
-    printf("\n   Seja bem vindo ao restaurante x");
+    printf("\n     Bem vindo ao restaurante x");
     printf("\n_______________________________________\n");
-    printf("Aperte qualquer tecla para ver o cardapio. \n");
+    printf("\n\nAperte qualquer tecla para ver o cardapio. \n");
     getch();
 
     verCardapio();
 }
 
 void verCardapio(void) {
+    int i = 0;
     system("cls");
     printf("\n_______________MENU_______________\n");
     printf("\n  Cod     Descricao      Valor (R$)");
@@ -62,8 +70,9 @@ void verCardapio(void) {
     while (!feof(Arq)) {
         fread(&reg, sizeof(reg), 1, Arq);
         if (!feof(Arq)) {
-            printf("\n%3i %-20s R$ %.2f", reg.codProd, reg.descrProd, reg.custoProd);
+            printf("\n%3i %-20s R$ %.2f", reg.codProd-1, reg.descrProd, reg.custoProd);
         }
+        i++;
     }
     printf("\n__________________________________\n");
     fclose(Arq);
@@ -72,7 +81,7 @@ void verCardapio(void) {
 
 
 void escolherOpcao(void) {
-    int opc;
+    int opc, i;
     void verCardapio(void);
     void opcoesPedido(void);
 
@@ -80,8 +89,7 @@ void escolherOpcao(void) {
         system("cls");
         printf("Opções\n 1 - Ver cardápio\n 2 - Realizar pedido\n 3 - Sair");
         scanf("%d", &opc);
-        switch (opc)
-        {
+        switch (opc) {
         case 1:
             verCardapio();
             break;
@@ -91,6 +99,7 @@ void escolherOpcao(void) {
         case 3:
             exit(0);
         default:
+            printf("Opção inválida");
             break;
         }
     } while (opc != 1 || opc != 2 || opc != 3);
@@ -116,8 +125,10 @@ void opcoesPedido(void){
             break;
         case 3:
             finalizarPedido();
+            break;
         case 4:
             escolherOpcao();
+            break;
         default:
             break;
         }
@@ -126,9 +137,36 @@ void opcoesPedido(void){
 }
 
 void incluirItem(void) {
-    system("cls");
-    printf("Qual o codigo do item desejado? ");
-    scanf("%d", pedido.codProd);
+    char carrinho(int count, int cod, char* nome, float valorUnitario, int qntd);
+    char subtotal(int cod, char* nome, float valorUnitario, int qntd);
+    int i, cod, qntd;
+    float total;
+    char continuar;
+
+    do {
+        system("cls");
+        verCardapio();
+
+        carrinho(count, pedido[count].codProd, cardapio[count].descrProd, pedido[count].custoProd, pedido[count].qntdProd);
+
+        printf("Qual o codigo do item desejado? ");
+        scanf("%d", &cod);
+        printf("Qual a quantidade do item desejado? ");
+        scanf("%d", &pedido[count].qntdProd);
+
+        pedido[count].codProd = cod;
+        pedido[count].custoProd = cardapio[cod].custoProd;
+        pedido[count].subtotal = cardapio[cod].custoProd * pedido[count].qntdProd;
+        printf("Deu %.2f, mais alguma coisa?", pedido[count].subtotal);
+
+        subtotal(cod, cardapio[cod].descrProd, cardapio[cod].custoProd, pedido[count].qntdProd);
+        
+        pedido[count].total += pedido[count].subtotal;
+        count++;
+
+        printf("%d", count);
+        continuar = getch();        
+    } while (continuar == 's' || continuar == 'S');
     
 }
 
@@ -138,4 +176,32 @@ void removerItem(void) {
 
 void finalizarPedido(void) {
     system("cls");
+}
+
+char carrinho(int count, int cod, char *nome, float valorUnitario, int qntd) {
+    int i;
+
+    for (i = 0; i < MAXPEDIDOS; i++)
+    {
+        if (pedido[i].qntdProd > 0)
+        {
+            printf("--------------------------------\n");
+            printf("Produto escolhido: (%d)- %s \n", pedido[i].codProd, pedido[i].descrProd);
+            printf("Valor da unidade: %.2f\n", pedido[i].custoProd);
+            printf("Quantidade: %d\n", pedido[i].qntdProd);
+            printf("Subtotal: %.2f\n", (float)pedido[i].custoProd * pedido[i].qntdProd);
+            printf("--------------------------------\n");
+        }
+        
+    }
+}
+char subtotal(int cod, char* nome, float valorUnitario, int qntd)
+{
+    system("cls");
+    printf("--------------------------------\n");
+    printf("Produto escolhido: (%d)- %s \n", cod, nome);
+    printf("Valor da unidade: %.2f\n", valorUnitario);
+    printf("Quantidade: %d\n", qntd);
+    printf("Subtotal: %.2f\n", (float)valorUnitario*qntd);
+    printf("--------------------------------\n");
 }
