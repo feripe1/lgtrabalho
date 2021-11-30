@@ -8,6 +8,7 @@
 #define MAXQNTD 10
 
 int qntd = 0;
+int nmPedido;
 
 struct produto {
     int codProd;
@@ -16,7 +17,6 @@ struct produto {
 } cardapio[MAX];
 
 struct pedido {
-    int nmPedido;
     int codProd;
     char descrProd[20];
     float custoProd;
@@ -27,9 +27,10 @@ struct pedido {
 
 struct pagamento {
     int nmPedido;
+    char nomePessoa[30];
     char formaPagamento[20];
     float total;
-}pagamento[MAXPEDIDOS] = {0};
+} pagamento = {0};
 
 int main() {
     int opc;
@@ -37,13 +38,47 @@ int main() {
     void importCardapio(void);
     void verCardapio(void);
     void opcoesPedido(void);
+    void importNPedido(void);
 
     importCardapio();
+    importNPedido();
+    verCardapio();
     opcoesPedido();
-    getch();
 
     getch();
     return 0;
+}
+
+void importNPedido(void) {
+    FILE *Arq;
+    void exportNPedido(void);
+
+    Arq = fopen("NMPEDIDO.DAT", "r+b");
+    if (Arq == NULL) {
+        printf("\nErro ao abrir NMPEDIDO.DAT");
+        getch();
+        exit(0);
+    }
+    else {
+        fread(&nmPedido, sizeof(nmPedido), 1, Arq);
+        nmPedido++;
+    }
+    fclose(Arq);
+    exportNPedido();
+}
+
+void exportNPedido(void) {
+    FILE *Arq;
+    Arq = fopen("NMPEDIDO.DAT", "w+b");
+    if (Arq == NULL) {
+        printf("\nErro ao abrir NMPEDIDO.DAT");
+        getch();
+        exit(0);
+    }
+    else {
+        fwrite(&nmPedido, sizeof(nmPedido), 1, Arq);
+    }
+    fclose(Arq);
 }
 
 void importCardapio(void) {
@@ -59,19 +94,20 @@ void importCardapio(void) {
     while (!feof(Arq)) {
         fread(&cardapio, sizeof(cardapio), 1, Arq);
     }
-
     fclose(Arq);
 }
 
 void verCardapio(void) {
     int i;
     system("cls");
+
+    printf("nm do pedido: %d\n", nmPedido);
     printf("\n_______________MENU_______________\n");
     printf("\n  Cod     Descricao      Valor (R$)");
     printf("\n__________________________________\n");
     for (i = 0; i < MAX; i++) {
         if (cardapio[i].codProd != 0) {
-            printf("\n%3i %-20s R$ %.2f", cardapio[i].codProd, cardapio[i].descrProd, cardapio[i].custoProd);
+            printf("\n  %-7i %-15s R$ %.2f", cardapio[i].codProd, cardapio[i].descrProd, cardapio[i].custoProd);
         }
         
     }
@@ -85,8 +121,9 @@ void opcoesPedido(void){
     void cobranca(void);
     void menuLancamento(void);
     void carrinho(void);
+    void verCardapio(void);
     do {
-        system("cls");
+        verCardapio();
         carrinho();
         printf("\nOpções do pedido: ");
         printf("\n(1)- Incluir um item\n(2)- Remover um item\n(3)- Finalizar pedido\n(ESQ)- Sair ");
@@ -99,10 +136,6 @@ void opcoesPedido(void){
             removerItem();
             break;
         case '3':
-            system("cls");
-            printf("Entrando em FINALIZAR PEDIDO\n");
-            printf("...Aperte qualquer tecla para continuar...");
-            getch();
             cobranca();
             break;
         case 27:
@@ -113,7 +146,6 @@ void opcoesPedido(void){
             printf("Opção inválida\n");
             printf("...Aperte qualquer tecla para continuar...");
             getch();
-            menuLancamento();
             break;
         }
     } while (opc != 27);
@@ -228,6 +260,7 @@ void removerItem(void) {
         do {
             system("cls");
             carrinho();
+            
             printf("\nQual o código do item que deseja remover?\n");
             printf("(-1) Remover tudo\n");
             printf("(0)  Voltar\n");
@@ -239,23 +272,13 @@ void removerItem(void) {
                 getch();
             }
 
-            else if (cardapio[cod].custoProd == 0) {
-                system("cls");
-                printf("Código inválido");
-                getch();
-            }
-
-            else if (pedido[cod].qntdProd == 0)
-            {
-                system("cls");
-                printf("Esse item tem 0 de quantidade");
-                getch();
-            }
+            
 
             else if (cod < 0) {
                 do {
                     printf("\nDeseja mesmo remover tudo?");
                     opc = getch();
+
                     switch (opc) {
                     case 13:
                         system("cls");
@@ -269,7 +292,6 @@ void removerItem(void) {
                         pedido[MAXPEDIDOS].total = 0;
                         getch();
                         break;
-
                     case 27:
                         system("cls");
                         printf("Remoção cancelada.");
@@ -283,42 +305,56 @@ void removerItem(void) {
                     }
                 } while (opc != 13 && opc != 27);
             }
+            else if (cardapio[cod].custoProd == 0) {
+                system("cls");
+                printf("Código inválido");
+                getch();
+            }
+
             else if (cod > 0) {
-                do {
-                    printf("\nDeseja mesmo remover o item?\n");
-                    opc = getch();
+                if (pedido[cod].qntdProd == 0) {
+                    system("cls");
+                    printf("Esse item tem 0 de quantidade");
+                    getch();
+                }
+                else {
+                    do {
+                        printf("\nDeseja mesmo remover o item?\n");
+                        opc = getch();
 
-                    switch (opc)
-                    {
-                    case 13:
-                        system("cls");
-                        printf("O item foi removido com sucesso.\n");
-                        printf("...Aperte qualquer tecla para voltar");
-                        pedido[MAXPEDIDOS].total -= pedido[cod].subtotal;
-                        pedido[cod].qntdProd = 0;
-                        pedido[cod].subtotal = 0;
-                        getch();
-                        break;
+                        switch (opc) {
+                        case 13:
+                            system("cls");
+                            printf("O item foi removido com sucesso.\n");
+                            printf("...Aperte qualquer tecla para voltar");
+                            pedido[MAXPEDIDOS].total -= pedido[cod].subtotal;
+                            pedido[cod].qntdProd = 0;
+                            pedido[cod].subtotal = 0;
+                            getch();
+                            break;
 
-                    case 27:
-                        system("cls");
-                        printf("Remoção de item cancelada.\n");
-                        printf("...Aperte qualquer tecla para voltar");
-                        getch();
-                        break;
+                        case 27:
+                            system("cls");
+                            printf("Remoção de item cancelada.\n");
+                            printf("...Aperte qualquer tecla para voltar");
+                            getch();
+                            break;
 
-                    default:
-                        printf("Opção inválida");
-                        getch();
-                        break;
-                    }
+                        default:
+                            printf("Opção inválida");
+                            getch();
+                            break;
+                        }
 
-                } while (opc != 13 && opc != 27);
+                    } while (opc != 13 && opc != 27);
+                }
+                
             }
         }
         while (cod != 0 && opc != 13 && opc != 27);
     }
     else {
+        system("cls");
         printf("Não há itens a remover.\nPressione qualquer tecla para voltar.");
         getch();
     }  
@@ -333,21 +369,21 @@ void carrinho(void) {
     for (i = 0; i < MAXPEDIDOS; i++) {
         if (pedido[i].qntdProd > 0) {
             if (primeiro == 0) {
-                printf("--------------------------CARRINHO----------------------------\n");
+                printf("--------------------------CARRINHO-------------------------------\n");
             }
             primeiro = 1;
-            printf("| Produto      Valor da unidade   Quantidade    Subtotal     |\n");
-            printf("| (%d)- %s        %.2f            %d          %.2f   |\n",       pedido[i].codProd, 
-                                                                                 pedido[i].descrProd,
-                                                                                 pedido[i].custoProd,
-                                                                                 pedido[i].qntdProd,
-                                                                                 pedido[i].subtotal);
-            printf("--------------------------------------------------------------\n");
+            printf("| Produto         Valor da unidade   Quantidade    Subtotal     |\n");
+            printf("| (%d)- %s        %.2f            %d          %.2f      |\n",       pedido[i].codProd, 
+                                                                                        pedido[i].descrProd,
+                                                                                        pedido[i].custoProd,
+                                                                                        pedido[i].qntdProd,
+                                                                                        pedido[i].subtotal);
+            printf("-----------------------------------------------------------------\n");
         }
     }
     if (pedido[MAXPEDIDOS].total > 1) {
-        printf("| TOTAL   =           %.2f                                 |\n", pedido[MAXPEDIDOS].total);
-        printf("--------------------------------------------------------------\n");
+        printf("| TOTAL   =           %.2f                                    |\n", pedido[MAXPEDIDOS].total);
+        printf("-----------------------------------------------------------------\n");
     }
 }
 
@@ -375,13 +411,15 @@ void cobranca(void) {
     void formasPagamento(void);
 
     if (pedido[MAXPEDIDOS].total > 0) {
-        printf("Entrando em formas de pagamento");
+        system("cls");
+        printf("Entrando em formas de pagamento\n");
         printf("...Aperte alguma tecla para continuar...");
         getch();
         formasPagamento();
     }
     else {
-        printf("Não há nenhum pedido lançado.");
+        system("cls");
+        printf("Não há nenhum pedido lançado.\n");
         printf("...Pressione qualquer tecla para continuar...");
         getch();
     }
@@ -429,18 +467,19 @@ void pagamentoDinheiro(void) {
         system("cls");
         printf("\no troco é de %.2f \n", troco);
 
-        pagamento[MAXPEDIDOS].nmPedido = pedido[MAXPEDIDOS].nmPedido;
-        strcpy(pagamento[MAXPEDIDOS].formaPagamento, "Dinheiro");
-        pagamento[MAXPEDIDOS].total = pedido[MAXPEDIDOS].total;
+        strcpy(pagamento.formaPagamento, "Dinheiro");
+        pagamento.total = pedido[MAXPEDIDOS].total;
 
         FILE *Arq;
 
         Arq = fopen("PAGAMENTOS.DAT", "a");
 
-        fwrite(&pagamento[MAXPEDIDOS], sizeof(pagamento[MAXPEDIDOS]), 1, Arq);
+        fwrite(&pagamento, sizeof(pagamento), 1, Arq);
         fclose(Arq);
-        printf("\nVá para a fila de espera.");
-        exit(0);
+
+        printf("Digite seu nome, para chamarmos após a preparação do pedido");
+        gets(pagamento.nomePessoa);
+        getch();
     }
     else {
         printf("Valor insuficiente. ");
@@ -448,6 +487,7 @@ void pagamentoDinheiro(void) {
         pagamentoDinheiro();
     }
     getch();
+    exit(0);
 }
 
 void pagamentoCartao(void) {
@@ -465,15 +505,16 @@ void pagamentoCheque(void) {
 
     printf("Pagamento em cheque conclúido.\n");
     printf("Vá para a fila de espera");
-    pagamento[MAXPEDIDOS].nmPedido = pedido[MAXPEDIDOS].nmPedido;
-    strcpy(pagamento[MAXPEDIDOS].formaPagamento, "Cheque");
-    pagamento[MAXPEDIDOS].total = pedido[MAXPEDIDOS].total;
+
+    strcpy(pagamento.formaPagamento, "Cheque");
+    pagamento.total = pedido[MAXPEDIDOS].total;
+    pagamento.nmPedido = nmPedido;
 
     FILE *Arq;
 
     Arq = fopen("PAGAMENTOS.DAT", "a");
 
-    fwrite(&pagamento[MAXPEDIDOS], sizeof(pagamento[MAXPEDIDOS]), 1, Arq);
+    fwrite(&pagamento, sizeof(pagamento), 1, Arq);
     fclose(Arq);
     getch();
     exit(1);
