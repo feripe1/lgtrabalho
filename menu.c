@@ -27,10 +27,10 @@ struct pedido {
 
 struct pagamento {
     int nmPedido;
-    char nomePessoa[30];
-    char formaPagamento[20];
+    char nomePessoa[10];
+    char formaPagamento[10];
     float total;
-} pagamento = {0};
+} pagamento[MAX] = {0};
 
 int main() {
     int opc;
@@ -433,10 +433,15 @@ void formasPagamento(void) {
 
     system("cls");
     carrinho();
+
+    printf("Digite seu nome, para chamarmos após a preparação do pedido\n");
+    fflush(stdin);
+    gets(pagamento[nmPedido].nomePessoa);
     printf("\nQual o método de pagamento? \n");
     printf("(1)- Dinheiro  \n(2)- xerecard  \n(3)- Cheque\n");
     fflush(stdin);
     scanf("%d", &opc);
+
     switch (opc) {
     case 1:
         pagamentoDinheiro();
@@ -467,18 +472,16 @@ void pagamentoDinheiro(void) {
         system("cls");
         printf("\no troco é de %.2f \n", troco);
 
-        strcpy(pagamento.formaPagamento, "Dinheiro");
-        pagamento.total = pedido[MAXPEDIDOS].total;
+        pagamento[nmPedido].nmPedido = nmPedido;
+        strcpy(pagamento[nmPedido].formaPagamento, "Dinheiro");
+        pagamento[nmPedido].total = pedido[MAXPEDIDOS].total;
 
         FILE *Arq;
 
-        Arq = fopen("PAGAMENTOS.DAT", "a");
+        Arq = fopen("PAGAMENTOS.DAT", "a+b");
 
-        fwrite(&pagamento, sizeof(pagamento), 1, Arq);
+        fwrite(&pagamento[nmPedido], sizeof(pagamento[nmPedido]), 1, Arq);
         fclose(Arq);
-
-        printf("Digite seu nome, para chamarmos após a preparação do pedido");
-        gets(pagamento.nomePessoa);
         getch();
     }
     else {
@@ -506,15 +509,15 @@ void pagamentoCheque(void) {
     printf("Pagamento em cheque conclúido.\n");
     printf("Vá para a fila de espera");
 
-    strcpy(pagamento.formaPagamento, "Cheque");
-    pagamento.total = pedido[MAXPEDIDOS].total;
-    pagamento.nmPedido = nmPedido;
+    strcpy(pagamento[nmPedido].formaPagamento, "Cheque");
+    pagamento[nmPedido].total = pedido[MAXPEDIDOS].total;
+    pagamento[nmPedido].nmPedido = nmPedido;
 
     FILE *Arq;
 
-    Arq = fopen("PAGAMENTOS.DAT", "a");
+    Arq = fopen("PAGAMENTOS.DAT", "a+b");
 
-    fwrite(&pagamento, sizeof(pagamento), 1, Arq);
+    fwrite(&pagamento[nmPedido], sizeof(pagamento[nmPedido]), 1, Arq);
     fclose(Arq);
     getch();
     exit(1);
