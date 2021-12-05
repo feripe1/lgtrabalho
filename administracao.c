@@ -2,22 +2,28 @@
 #include <conio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
-#define MAX 99
+#define MAX 20
+
+int nmPedido;
 
 struct produto
 {
     int codProd;
     char descrProd[20];
     float custoProd;
+    int demoraMinutos;
 } cardapio[MAX];
 
 struct pagamento
 {
     int nmPedido;
-    char nomePessoa[10];
+    char nomePessoa[26];
     char formaPagamento[10];
     float total;
+    bool entregue;
+    int demoraTotal;
 } pagamento[MAX] = {0};
 
 int main()
@@ -25,7 +31,6 @@ int main()
     void importPagamentos(void);
     void importCardapio(void);
     void opcoes(void);
-
     importPagamentos();
     importCardapio();
     opcoes();
@@ -42,6 +47,7 @@ void opcoes(void) {
     void verPagamentos(void);
     void retirarItem(void);
 
+    
     printf("Selecione uma opcao: \n");
     printf("(1) Ver os últimos pagamentos\n(2) Adicionar item ao cardapio\n(3) Retirar item");
     opc = getch();
@@ -79,19 +85,39 @@ void importCardapio(void) {
     fclose(Arq);
 }
 
+void verCardapio(void)
+{
+    int i;
+    system("cls");
+
+    printf("\n_______________MENU_______________\n");
+    printf("\n  Cod     Descricao      Valor (R$)");
+    printf("\n__________________________________\n");
+    for (i = 0; i < MAX; i++)
+    {
+        if (cardapio[i].codProd != 0)
+        {
+            printf("\n  %-7i %-15s R$ %.2f", cardapio[i].codProd, cardapio[i].descrProd, cardapio[i].custoProd);
+        }
+    }
+    printf("\n__________________________________\n");
+}
+
 void importPagamentos(void) {
     system("cls");
 
     FILE *Arq;
-    Arq = fopen("PAGAMENTOS.DAT", "r+b");
+    Arq = fopen("PAGAMENTOS.DAT", "rb");
     if (Arq == NULL) {
         printf("\nErro ao abrir PRODUTOS.DAT");
         getch();
-        exit(0);
+        
     }
-    while (!feof(Arq)) {
+    while (!feof(Arq))
+    {
         fread(&pagamento, sizeof(pagamento), 1, Arq);
     }
+    
     fclose(Arq);
 }
 
@@ -101,7 +127,7 @@ void verPagamentos(void) {
 
     for (i = 0; i < MAX; i++)
     {
-        if (pagamento[i].total != 0)
+        if (pagamento[i].total >0)
         {
             printf("%d %s %s %.2f \n", pagamento[i].nmPedido, pagamento[i].nomePessoa, pagamento[i].formaPagamento, pagamento[i].total);
         }
@@ -112,19 +138,21 @@ void verPagamentos(void) {
 
 void adicionarItem(void) {
     char opc;
-    int cod;
+    int cod, aux;
+    void verCardapio(void);
     FILE *fp;
 
-    fp = fopen("PRODUTOS.DAT", "w+b");
+    fp = fopen("PRODUTOS.DAT", "w");
 
     if (fp == NULL) {
         printf("Error opening file\n");
-        exit(1);
+        
     }
 
     do {
         fflush(stdin);
-
+        system("cls");
+        verCardapio();
         printf("cod ");
         scanf("%d", &cod);
 
@@ -138,6 +166,9 @@ void adicionarItem(void) {
         fflush(stdin);
         scanf("%f", &cardapio[cod].custoProd);
 
+        printf("Demora? ");
+        scanf("%d", &cardapio[cod].demoraMinutos);
+        
         printf("Deseja continuar? esq para não");
         opc = getch();
     } while (opc != 27);
@@ -147,8 +178,10 @@ void adicionarItem(void) {
 }
 
 void retirarItem(void) {
+    void verCardapio(void);
     int cod, i;
     system("cls");
+    verCardapio();
     printf("Qual o código do item que deseja retirar?");
     scanf("%d", &cod);
 
@@ -162,7 +195,7 @@ void retirarItem(void) {
     if (fp == NULL)
     {
         printf("Error opening file\n");
-        exit(1);
+        
     }
 
     for (i = 0; i < MAX; i++)
