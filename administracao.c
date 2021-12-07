@@ -24,7 +24,7 @@ struct pagamento
     float total;
     bool entregue;
     int demoraTotal;
-} pagamento[MAX] = {0};
+} pagamento[199] = {0};
 
 int main()
 {
@@ -129,7 +129,7 @@ void verPagamentos(void) {
     {
         if (pagamento[i].total >0)
         {
-            printf("%d %s %s %.2f \n", pagamento[i].nmPedido, pagamento[i].nomePessoa, pagamento[i].formaPagamento, pagamento[i].total);
+            printf("%1d %2s %2.2f \n", pagamento[i].nmPedido,  pagamento[i].formaPagamento, pagamento[i].total);
         }
         
     }
