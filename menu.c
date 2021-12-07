@@ -143,7 +143,6 @@ void opcoesPedido(void){
     void incluirItem(void);
     void removerItem(void);
     void cobranca(void);
-    void menuLancamento(void);
     void carrinho(void);
     void verCardapio(void);
     do {
@@ -173,14 +172,6 @@ void opcoesPedido(void){
             break;
         }
     } while (opc != 27);
-}
-
-void menuLancamento(void) {
-    void verCardapio(void);
-    void opcoesPedido(void);
-
-    verCardapio();
-    opcoesPedido();
 }
 
 void incluirItem(void) {
@@ -486,32 +477,43 @@ void pagamentoDinheiro(void) {
     void exportPagamento(void);
     float cedula, troco, aux;
     int i;
+    bool voltar = false;
     system("cls");
 
-    carrinho();
-    printf("\nDigite o valor total das cedulas\n");
-    scanf("%f", &cedula);
+    do
+    {
+        carrinho();
+        printf("\nDigite o valor total das cedulas: ( 0 - Voltar )\n");
+        scanf("%f", &cedula);
 
-    troco = cedula - pagamento.total;
+        troco = cedula - pagamento.total;
+        if (cedula == 0)
+        {
+            printf("Voltando para formas de pagamento");
+            printf("...Aperte qualquer tecla para continuar...");
+            getch();
+            voltar = true;
+        }
+        
+        else if (pagamento.total < cedula)
+        {
+            system("cls");
+            printf("\no troco é de %.2f \n", troco);
 
-    if (pagamento.total < cedula) {
-        system("cls");
-        printf("\no troco é de %.2f \n", troco);
+            pagamento.nmPedido = nmPedido;
+            strcpy(pagamento.formaPagamento, "Dinheiro");
 
-        pagamento.nmPedido = nmPedido;
-        strcpy(pagamento.formaPagamento, "Dinheiro");
+            exportPagamento();
+            armazenarFila();
 
-        exportPagamento();
-        armazenarFila();
-
-        getch();
-    }
-    else {
-        printf("Valor insuficiente. ");
-        getch();
-        pagamentoDinheiro();
-    }
-    exit(0);
+            getch();
+        }
+        else
+        {
+            printf("Valor insuficiente. ");
+            getch();
+        }
+    } while (voltar == false);
 }
 
 void pagamentoCartao(void) {
@@ -525,32 +527,47 @@ void pagamentoCartao(void) {
 }
 
 void pagamentoCheque(void) {
-    void mostrarComprovante(void);
+    void armazenarFila(void);
     void exportPagamento(void);
-    int i;
+    int i, valorCheque;
 
+    bool voltar = false;
     system("cls");
 
-    printf("Pagamento em cheque conclúido.\n");
-    printf("Vá para a fila de espera");
+    do
+    {
+        carrinho();
+        printf("\nDigite o valor total das cedulas: ( 0 - Voltar )\n");
+        scanf("%f", &valorCheque);
 
-    strcpy(pagamento.formaPagamento, "Cheque");
-    pagamento.nmPedido = nmPedido;
+        if (valorCheque == 0)
+        {
+            printf("Voltando para formas de pagamento");
+            printf("...Aperte qualquer tecla para continuar...");
+            getch();
+            voltar = true;
+        }
 
-    exportPagamento();
-    mostrarComprovante();
+        else if (pagamento.total < valorCheque)
+        {
+            system("cls");
 
-    exit(0);
+            pagamento.nmPedido = nmPedido;
+            strcpy(pagamento.formaPagamento, "Cheque");
+
+            exportPagamento();
+            armazenarFila();
+
+            getch();
+        }
+        else
+        {
+            printf("Valor insuficiente. ");
+            getch();
+        }
+    } while (voltar == false);
 }
 
-void exportPedidos(void) {
-    FILE *Arq;
-    int i;
-    Arq = fopen ("PEDIDOS.DAT", "w");
-
-    fwrite(&pedido, sizeof(pedido), 1, Arq);
-    fclose(Arq);
-}
 
 void armazenarFila(void) {
     void exportFila(void);
@@ -560,8 +577,6 @@ void armazenarFila(void) {
 
     for (i = 0; i < 20; i++) {
         pagamento.demoraTotal += pedido[i].demoraMinutos * pedido[i].qntdProd;
-        printf("%d", pagamento.demoraTotal);
-        getch();
     }
 
     if (pagamento.demoraTotal > 4) {
@@ -589,18 +604,22 @@ void mostrarComprovante(void) {
     void importPedidos(void);
     void armazenarFila(void);
 
-    printf("\n-------------------------COMPROVANTE--------------------\n");
-    printf("| Nm do pedido                Cliente                   |\n");
-    printf("| %-15d %20s             |\n", nmPedido, pagamento.nomePessoa);
-    printf("| Pedido pago com %-20s |\n", pagamento.formaPagamento);
-    printf("--------------------------------------------------------\n");
-    printf("| Cod    Nome do Produto    Quantidade    Subtotal     |\n");
+    FILE *REL;
+    REL = fopen ("COMPROVANTE.DAT", "w");
+    fprintf(REL,"\n-------------------------COMPROVANTE--------------------\n");
+    fprintf(REL,"| Nm do pedido                Cliente                  |\n");
+    fprintf(REL,"| %-15d %20s                 |\n", nmPedido, pagamento.nomePessoa);
+    fprintf(REL,"| Pedido pago com %-20s                 |\n", pagamento.formaPagamento);
+    fprintf(REL,"--------------------------------------------------------\n");
+    fprintf(REL,"| Cod    Nome do Produto    Quantidade    Subtotal     |\n");
      for (i = 0; i < 20; i++) {
         if (pedido[i].qntdProd > 0) {
-            printf("| %d %15s %12d %13.2f        |\n", pedido[i].codProd, pedido[i].descrProd, pedido[i].qntdProd, pedido[i].subtotal);
+            fprintf(REL,"| %d %15s %12d %13.2f         |\n", pedido[i].codProd, pedido[i].descrProd, pedido[i].qntdProd, pedido[i].subtotal);
         }
     }
-    printf("|\n|                                   Total: %.2f       |\n", pagamento.total);
-    printf("-------------------------------------------------------\n");
+    fprintf(REL,"|\n|                                   Total: %.2f       |\n", pagamento.total);
+    fprintf(REL,"--------------------------------------------------------\n");
+    fclose(REL);
+    system("notepad COMPROVANTE.DAT");
     getch();
 }
