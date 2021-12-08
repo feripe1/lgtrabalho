@@ -80,13 +80,9 @@ void importFila(void) {
     fread(&fila, sizeof(fila), 1, Arq);
 
     for (i = 0; i <= nmPedido; i++) {
-        for ( int j = 0; j <= nmPedido; j++) {
-            if (i != fila[i].pagamento.nmPedido ) {
-                aux = fila[fila[i].pagamento.nmPedido];
-                fila[fila[i].pagamento.nmPedido] = fila[i];
-                fila[i] = aux;
-            }
-        }
+        aux = fila[fila[i].pagamento.nmPedido];
+        fila[fila[i].pagamento.nmPedido] = fila[i];
+        fila[i] = aux;
     }
     fclose(Arq);
 }
@@ -174,7 +170,7 @@ void verDetalhes(int x){
     printf("                                     Total: %.2f\n", fila[x].pagamento.total);
     printf("            Tempo de preparo previsto: %d minutos\n", fila[x].pagamento.demoraTotal);
     printf("------------------------------------------------------\n");
-    printf("Deseja realizar a entrega? ( 0- Não || 1- Sim )\n");
+    printf("Deseja preparar o pedido? ( 0- Não || 1- Sim )\n");
 
     opc = getch();
     switch (opc)
@@ -190,12 +186,26 @@ void verDetalhes(int x){
 }
 
 void prepararPedido(int x) {
+    int j;
     void exportFila(void);
     void atualizarPosicaoFila(void);
     if (fila[x].posicaoFila == 1) {
         fila[x].pagamento.entregue = true;
-        printf("Preparando o pedido\n");
-        Sleep(10000);
+        printf("Separando ingredientes\n");
+        Sleep(1500);
+        for (i = 0; i < 20; i++)
+        {
+            if (fila[x].pedido[i].qntdProd > 0)
+            {
+                for (j = 0; j < fila[x].pedido[i].qntdProd; j++)
+                {
+                    printf("Preparando %s.\n", fila[x].pedido[i].descrProd);
+                    Sleep(2000);
+                }
+                
+            }
+            
+        }
         printf("Pedido número %d entregue com sucesso.\n", x);
         exportFila();
         atualizarPosicaoFila();
