@@ -28,17 +28,20 @@ struct pagamento
     int nmPedido;
     char nomePessoa[26];
     char formaPagamento[10];
+    char nmCartao[17];
     float total;
     bool entregue;
     int demoraTotal;
 } pagamento = { };
 
-struct fila
+typedef struct
 {
     struct pedido pedido[MAX];
     struct pagamento pagamento;
     int posicaoFila;
-} fila[MAXNPEDIDOS], aux;
+} FILA;
+
+FILA fila[MAXNPEDIDOS], aux;
 
 int main()
 {
@@ -47,6 +50,10 @@ int main()
     void importFila(void);
     void atualizarPosicaoFila(void);
 
+    FILA *d;
+    int qntdMemoria;
+    qntdMemoria = sizeof(FILA);
+    d = (FILA *) malloc(qntdMemoria);
     importNPedido();
     importFila();
     atualizarPosicaoFila();
@@ -75,14 +82,18 @@ void importNPedido(void)
 }
 
 void importFila(void) {
+	int j;
     FILE *Arq;
     Arq = fopen("FILA.DAT", "rb");
     fread(&fila, sizeof(fila), 1, Arq);
 
-    for (i = 0; i <= nmPedido; i++) {
-        aux = fila[fila[i].pagamento.nmPedido];
-        fila[fila[i].pagamento.nmPedido] = fila[i];
-        fila[i] = aux;
+    for (i = 0; i < nmPedido; i++) {
+        for (j = 0; j < nmPedido; j++)
+        {
+            aux = fila[fila[i].pagamento.nmPedido];
+            fila[fila[i].pagamento.nmPedido] = fila[i];
+            fila[i] = aux;
+        }
     }
     fclose(Arq);
 }
@@ -191,8 +202,7 @@ void prepararPedido(int x) {
     void atualizarPosicaoFila(void);
     if (fila[x].posicaoFila == 1) {
         fila[x].pagamento.entregue = true;
-        printf("Separando ingredientes\n");
-        Sleep(1500);
+        printf("Separando ingredientes (10x acelerado)\n");
         for (i = 0; i < 20; i++)
         {
             if (fila[x].pedido[i].qntdProd > 0)
