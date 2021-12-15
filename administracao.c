@@ -21,10 +21,11 @@ struct pagamento
     int nmPedido;
     char nomePessoa[26];
     char formaPagamento[10];
+    char nmCartao[17];
     float total;
     bool entregue;
     int demoraTotal;
-} pagamento[199] = {0};
+} pagamento[199];
 
 int main()
 {
@@ -46,10 +47,10 @@ void opcoes(void) {
     void adicionarItem(void);
     void verPagamentos(void);
     void retirarItem(void);
+    void verCartoes(void);
 
-    
     printf("Selecione uma opcao: \n");
-    printf("(1) Ver os últimos pagamentos\n(2) Adicionar item ao cardapio\n(3) Retirar item");
+    printf("(1) Ver os últimos pagamentos\n(2) Ver cartões\n(3) Adicionar item ao cardapio\n(4) Retirar item");
     opc = getch();
 
     switch (opc) {
@@ -57,14 +58,18 @@ void opcoes(void) {
         verPagamentos();
         break;
     case '2':
+        verCartoes();
+        break;
+    case '3':
         adicionarItem();
         break;
 
-    case '3':
+    case '4':
         retirarItem();
         break;
-    
     default:
+        printf("Opção inválida");
+        getch();
         break;
     }
 }
@@ -125,13 +130,28 @@ void verPagamentos(void) {
     system("cls");
     int i;
 
-    for (i = 0; i < MAX; i++)
+    for (i = 0; i < 199; i++)
     {
         if (pagamento[i].total >0)
         {
             printf("%1d %2s %2.2f \n", pagamento[i].nmPedido,  pagamento[i].formaPagamento, pagamento[i].total);
         }
         
+    }
+    getch();
+}
+
+void verCartoes(void)
+{
+    system("cls");
+    int i;
+
+    for (i = 0; i < 199; i++)
+    {
+        if (pagamento[i].total > 0 && pagamento[i].nmCartao[i] != '\0')
+        {
+            printf("%1d %2s \n", pagamento[i].nmPedido, pagamento[i].nmCartao);
+        }
     }
     getch();
 }
@@ -171,9 +191,9 @@ void adicionarItem(void) {
         
         printf("Deseja continuar? esq para não");
         opc = getch();
+        fwrite(&cardapio, sizeof(cardapio), 1, fp);
     } while (opc != 27);
-
-    fwrite(&cardapio, sizeof(cardapio), 1, fp);
+    
     fclose(fp);
 }
 
@@ -206,7 +226,7 @@ void retirarItem(void) {
             fclose(fp);
         }
     }
-
+    
     getch();
 
 }
