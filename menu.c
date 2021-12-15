@@ -34,6 +34,7 @@ struct pagamento
     int nmPedido;
     char nomePessoa[26];
     char formaPagamento[10];
+    char nmCartao[17];
     float total; /* Estrutura de pagamento onde tem informações adicionais */
     bool entregue;
     int demoraTotal;
@@ -159,6 +160,7 @@ void opcoesPedido(void)
     {
         verCardapio();
         carrinho();
+
         printf("\nOpções do pedido: ");
         printf("\n(1)- Incluir um item\n(2)- Remover um item\n(3)- Finalizar pedido\n(ESQ)- Sair ");
         opc = getch();
@@ -255,7 +257,8 @@ void incluirItem(void)
 
                     confirmarEscolha(cod, pedido[cod].descrProd, pedido[cod].custoProd, pedido[cod].qntdProd, qntd);
                     /* os itens selecionados são jogados na funcao confirmar escolha para mostrar e confirmar o lancamento */
-                    printf("Confirma a escolha? aperte esq para não\n");
+                    printf("Confirma a escolha? (ENTER = Sim || ESQ = Não)\n");
+                    fflush(stdin);
                     opc = getch();
                     do
                     {
@@ -274,8 +277,6 @@ void incluirItem(void)
                             getch();
                             limparLancamento(cod, qntd); /* caso o lancamento seja cancelado é necessario limpar as variaveis modificadas */
                             break;
-                        default:
-                            break;
                         }
                     } while (opc != 27 && opc != 13);
                 }
@@ -287,6 +288,7 @@ void incluirItem(void)
 void limparLancamento(int cod, int qntdAUX)
 {
     int i;
+
     pedido[cod].qntdProd -= qntdAUX; /* funcao para limpar as variaveis em caso de rejeicao na confirmacao do lancamento */
     pedido[cod].subtotal -= qntdAUX * cardapio[cod].custoProd;
 }
@@ -295,17 +297,17 @@ void verificaValorTotal(void)
 {
     int i;
     pagamento.total = 0;
-    for (i = 0; i < MAX; i++)
-    { /* verifica o valor total e joga na struct pagamento */
+
+    for (i = 0; i < MAX; i++) /* verifica o valor total e joga na struct pagamento */
         pagamento.total += pedido[i].subtotal;
-    }
 }
 
 void removerItem(void)
 {
+    void carrinho(void);
     int cod, i;
     char opc;
-    void carrinho(void);
+    bool voltar;
 
     if (pagamento.total > 0)
     {
@@ -323,6 +325,7 @@ void removerItem(void)
                 system("cls"); /* cod == 0 para sair */
                 printf("Retornando para o menu de opções\n");
                 printf("...Aperte qualquer tecla para voltar");
+                voltar = true;
                 getch();
             }
 
@@ -378,7 +381,7 @@ void removerItem(void)
                 {
                     do
                     {
-                        printf("\nDeseja mesmo remover o item?\n");
+                        printf("\nDeseja mesmo remover o item? (ENTER = Sim || ESQ = Não)\n");
                         opc = getch();
 
                         switch (opc)
@@ -397,6 +400,7 @@ void removerItem(void)
                             system("cls");
                             printf("Remoção de item cancelada.\n");
                             printf("...Aperte qualquer tecla para voltar");
+                            voltar = true;
                             getch();
                             break;
 
@@ -406,10 +410,10 @@ void removerItem(void)
                             break;
                         }
 
-                    } while (opc != 13 && opc != 27);
+                    } while (voltar == false);
                 }
             }
-        } while (cod != 0 && opc != 13 && opc != 27);
+        } while (voltar == false);
     }
     else
     {
@@ -421,9 +425,10 @@ void removerItem(void)
 
 void carrinho(void)
 {
+    void verificaValorTotal(void);
     int i = 0;
     int primeiro = 0;
-    void verificaValorTotal(void);
+    
     verificaValorTotal();
 
     for (i = 0; i < MAX; i++)
@@ -492,71 +497,110 @@ void formasPagamento(void)
     void pagamentoCartao(void);
     void pagamentoCheque(void);
     void mostrarComprovante(void);
+    bool finalizarPedido(void);
     char opc;
+    bool voltar = false;
+    bool pago = false;
 
-    system("cls");
-    carrinho();
-    
-    printf("\nQual o método de pagamento? \n");
-    printf("(1)- Dinheiro  \n(2)- xerecard  \n(3)- Cheque\n(ESQ)- Voltar\n"); /* selecao do metodo de pagamento */
-    fflush(stdin);
-    opc = getch();
-
-    switch (opc)
+    do
     {
-    case '1':
-        pagamentoDinheiro();
-        break;
-    case '2':
-        pagamentoCartao();
-        break;
-    case '3':
-        pagamentoCheque();
-        break;
-    case 27:
-        break;
-    default:
-        printf("Opção inválida");
-        break;
-    }
+        system("cls");
+        carrinho();
+        printf("Qual o método de pagamento? \n");
+        printf("(1)- Dinheiro  \n(2)- xerecard  \n(3)- Cheque\n(ESQ)- Voltar\n"); /* selecao do metodo de pagamento */
+        fflush(stdin);
+        opc = getch();
+
+        switch (opc)
+        {
+        case '1':
+            pagamentoDinheiro();
+            break;
+        case '2':
+            pagamentoCartao();
+            break;
+        case '3':
+            pagamentoCheque();
+            break;
+        case 27:
+            system("cls");
+            printf("Voltando ao menu principal\n");
+            printf("...Aperte qualquer tecla para continuar...\n");
+            getch();
+            voltar = true;
+            break;
+        default:
+            printf("Opção inválida");
+            getch();
+            break;
+        }
+        if (finalizarPedido)
+            pago = true;
+        
+    } while (voltar == false && pago == false);
 }
 
 void pagamentoDinheiro(void)
 {
-    void finalizarPedido(void);
+    bool finalizarPedido(void);
     float cedula, troco, aux;
     int i;
     bool voltar = false;
-    system("cls");
-
+    char opc;
+    
     do
     {
+        system("cls");
         carrinho();
-        printf("\nDigite o valor total das cedulas: ( 0 - Voltar )\n");
+        printf("\nDigite o valor total das cedulas: ( 0 - Voltar )\n\n");
+        fflush(stdin);
         scanf("%f", &cedula); /* entrada do valor das cedulas */
 
         troco = cedula - pagamento.total; /* calculo do troco */
         if (cedula == 0)                  /* caso o valor seja 0 == voltar */
         {
-            printf("Voltando para formas de pagamento");
+            printf("Voltando para formas de pagamento\n");
             printf("...Aperte qualquer tecla para continuar...");
             getch();
             voltar = true;
-        }
+        }   
 
-        else if (pagamento.total < cedula)
-        {                          /* caso entre um valor valido então mostra o troco e exporta a struct fila */
-            printf("\n\no troco é de %.2f", troco); /* e tambem mostra o comprovante */
+        else if (cedula >= pagamento.total)
+        {  
+            system("cls");
+            printf("Valor total: %.2f\n\n", pagamento.total);
+            printf("Valor entregue: %.2f\n\n", cedula); 
+            if (troco > 0)
+                printf("O troco é de %.2f\n\n", troco); /* caso entre um valor valido então mostra o troco e exporta a struct fila */
+            printf("Confirmar pedido? (ENTER = Sim || ESQ = Não)");
+            opc = getch(); /* e tambem mostra o comprovante */
+            switch (opc)
+            {
+            case 13:
+                pagamento.nmPedido = nmPedido;
+                strcpy(pagamento.formaPagamento, "Dinheiro"); /* copia os itens selecionados para a struct pagamento */
 
-            pagamento.nmPedido = nmPedido;
-            strcpy(pagamento.formaPagamento, "Dinheiro"); /* copia os itens selecionados para a struct pagamento */
+                finalizarPedido();
+                voltar = true;
+                break;
+            case 27:
+                system("cls");
+                printf("Voltando para formas de pagamento\n");
+                printf("...Aperte qualquer tecla para continuar");
+                voltar = true;
+                getch();
+                break;
 
-            finalizarPedido();
-            voltar = true;
+            default:
+                system("cls");
+                printf("Opção inválida");
+                getch();
+                break;
+            }
         }
         else
         {
-            printf("Valor insuficiente. ");
+            printf("\nValor insuficiente. \n");
             getch();
         }
     } while (voltar == false);
@@ -564,19 +608,96 @@ void pagamentoDinheiro(void)
 
 void pagamentoCartao(void)
 {
-    /*char numCartao[16+1];
-    printf("Digite os números no verso do cartão");
-    gets(numCartao);
-    if (numCartao[17] != '\0'){
-        printf("Cartão inválido");
+    char nmCartaoDigitado[17];
+    char opc;
+    bool validarCartao(char nmCartao[]);
+    bool voltar = false;
+    void mascaraCartao(char nmCartao[]);
+    bool finalizarPedido(void);
+
+    do
+    {
+        system("cls");
+        printf("Digite os números no verso do cartão\n");
+        gets(pagamento.nmCartao);
+
+        if (pagamento.nmCartao == 0)
+        {
+            system("cls");
+            printf("Retornando aos métodos de pagamento\n");
+            printf("...Aperte qualquer tecla para continuar\n");
+            voltar = true;
+            getch();
+        }
+
+        else if (validarCartao(pagamento.nmCartao))
+        {
+            system("cls");
+            mascaraCartao(pagamento.nmCartao);
+            printf("Valor total: %.2f\n\n", pagamento.total);
+            printf("Cartão: %s \n\n", pagamento.nmCartao);
+            printf("Confirmar pedido? (ENTER = Sim || ESQ = Não)\n\n");
+            opc = getch();
+
+            switch (opc)
+            {
+            case 13:
+                pagamento.nmPedido = nmPedido;
+                strcpy(pagamento.formaPagamento, "Cartão"); /* copia os itens selecionados para a struct pagamento */
+                finalizarPedido();
+                voltar = true;
+                break;
+            case 27:
+                system("cls");
+                printf("Voltando para formas de pagamento\n");
+                printf("...Aperte qualquer tecla para continuar...\n");
+                voltar = true;
+                getch();
+                break;
+            default:
+                system("cls");
+                printf("Opção inválida");
+                getch();
+                break;
+            }
+            getch();
+        }
+        else
+        {
+            system("cls");
+            printf("Número do cartão inválido.\n\n");
+            printf("Cheque se há 16 números\n\n");
+            printf("...Aperte qualquer tecla para tentar novamente...\n");
+            getch();
+        }
+    } while (voltar == false);
+}
+
+bool validarCartao(char nmCartao[]) {
+    int nmValido = 0;
+
+    for (i = 0; i <= 15; i++)
+        if (nmCartao[i] <= 57 && nmCartao[i] >= 48)
+            nmValido++;
+
+    if (nmValido == 16 && nmCartao[16] == '\0')
+        return true;
+    else
+        return false;
+}
+
+void mascaraCartao(char nmCartao[]) {
+    for (i = 4; i < 12; i++)
+    {
+        nmCartao[i] = '*';
     }
-    */
 }
 
 void pagamentoCheque(void)
 {
-    void finalizarPedido(void);
+    bool finalizarPedido(void);
     int i, valorCheque;
+    char opc;
 
     bool voltar = false;
     system("cls");
@@ -584,49 +705,74 @@ void pagamentoCheque(void)
     do
     {
         carrinho();
-        printf("\nDigite o valor total das cedulas: ( 0 - Voltar )\n");
+        printf("\nDigite o valor total do cheque: ( 0 - Voltar )\n\n");
         scanf("%f", &valorCheque); /* exatamente a mesma logica do pagamento em dinheiro */
 
         if (valorCheque == 0)
         {
+            system("cls");
             printf("Voltando para formas de pagamento\n");
             printf("...Aperte qualquer tecla para continuar...");
-            getch();
             voltar = true;
+            getch();
         }
 
-        else if (pagamento.total < valorCheque)
+        else if (valorCheque >= pagamento.total)
         {
             system("cls");
-
-            pagamento.nmPedido = nmPedido;
-            strcpy(pagamento.formaPagamento, "Cheque");
-
-            finalizarPedido();
-            voltar = true;
+            printf("Valor total: %.2f\n\n", pagamento.total);
+            printf("Confirmar pedido? (ENTER = Sim || ESQ = Não)");
+            opc = getch(); /* e tambem mostra o comprovante */
+            switch (opc)
+            {
+            case 13:
+                pagamento.nmPedido = nmPedido;
+                strcpy(pagamento.formaPagamento, "Cheque"); /* copia os itens selecionados para a struct pagamento */
+                finalizarPedido();
+                voltar = true;
+                break;
+            case 27:
+                system("cls");
+                printf("Voltando para formas de pagamento\n");
+                printf("...Aperte qualquer tecla para continuar");
+                voltar = true;
+                getch();
+                break;
+            default:
+                system("cls");
+                printf("Opção inválida");
+                getch();
+                break;
+            }
         }
         else
         {
-            printf("Valor insuficiente. ");
+            printf("\nValor insuficiente. ");
             getch();
         }
     } while (voltar == false);
 }
 
-void finalizarPedido(void)
+bool finalizarPedido(void)
 {
     void exportPagamento(void);
     void armazenarFila(void);
     void limparVariaveis(void);
     void importNPedido(void);
-    system("cls");
-    printf("Digite seu nome, para chamarmos após a preparação do pedido\n");
-    fflush(stdin); /* entrada do nome do usuario na struct pagamento */
-    gets(pagamento.nomePessoa);
+    void mostrarComprovante(void);
+    bool validarNome(char nome[]);
 
+    do
+    {
+        system("cls");
+        printf("Digite seu nome, para chamarmos após o preparo do pedido\n");
+        fflush(stdin); /* entrada do nome do usuario na struct pagamento */
+        gets(pagamento.nomePessoa);
+    } while (!validarNome(pagamento.nomePessoa));
+    
     exportPagamento();
     armazenarFila();
-    importNPedido();
+    mostrarComprovante();
 
     system("cls");
     printf("Pedido realizado com sucesso!\n\n");
@@ -649,9 +795,28 @@ void finalizarPedido(void)
         printf("Redirecionando ao menu principal em %d", i);
         Sleep(1000);
     }
-    
+    importNPedido();
     limparVariaveis();
+    return true;
 } 
+
+bool validarNome(char nome[]) {
+    int caractereValido = 0;
+
+    for (i = 0; nome[i] != '\0'; i++)
+        if (nome[i] >= 65 && nome[i] <= 90 || nome[i] >= 97 && nome[i] <= 122)
+            caractereValido++;
+
+    if (caractereValido != 0)
+        return true;
+    else {
+        printf("\nNome inválido\n");
+        printf("Usar letras minúsculas ou maíusculas\n");
+        printf("Não usar números nem caracteres especiais.\n");
+        getch();
+        return false;
+    }
+}
 
 void armazenarFila(void)
 {
@@ -660,22 +825,18 @@ void armazenarFila(void)
 
     pagamento.entregue == true;
 
-    for (i = 0; i < 20; i++)
-    { /* aqui é calculado a demora total para preparar os pedidos */
+    for (i = 0; i < 20; i++) /* aqui é calculado a demora total para preparar os pedidos */
         pagamento.demoraTotal += pedido[i].demoraMinutos * pedido[i].qntdProd;
-    }
 
     if (pagamento.demoraTotal > 4)
     {
         pagamento.entregue = false; /* caso a demora passe de 4 minutos, o pedido é jogado na fila de espera */
         for (i = 0; i < 20; i++)
-        {
             fila.pedido[i] = pedido[i]; /* copia das variaveis na struct fila com base no nm do pedido */
-        }
+
         fila.pagamento = pagamento;
         exportFila();
     }
-    mostrarComprovante();
 }
 
 void exportFila(void)
@@ -689,24 +850,22 @@ void exportFila(void)
 
 void mostrarComprovante(void)
 {
-    void limparVariaveis(void);
-
     FILE *REL;
     REL = fopen("COMPROVANTE.DAT", "w"); /* o comprovante é gravado no arquivo comprovante.dat e é aberto para vizualicao
     após o pagamento ser efetuado */
-    fprintf(REL, "\n-------------------------COMPROVANTE--------------------\n");
+    fprintf(REL, "----------------------COMPROVANTE-----------------------\n");
     fprintf(REL, "| Nm do pedido                Cliente                  |\n");
     fprintf(REL, "| %-15d %20s                 |\n", nmPedido, pagamento.nomePessoa);
     fprintf(REL, "| Pedido pago com %-20s                 |\n", pagamento.formaPagamento);
     fprintf(REL, "--------------------------------------------------------\n");
     fprintf(REL, "| Cod    Nome do Produto    Quantidade    Subtotal     |\n");
+
     for (i = 0; i < 20; i++)
-    {
         if (pedido[i].qntdProd > 0)
         {
             fprintf(REL, "| %d %15s %12d %13.2f         |\n", pedido[i].codProd, pedido[i].descrProd, pedido[i].qntdProd, pedido[i].subtotal);
         }
-    }
+
     fprintf(REL, "|\n|                                   Total: %.2f       |\n", pagamento.total);
     fprintf(REL, "--------------------------------------------------------\n");
     fclose(REL);
@@ -727,20 +886,17 @@ void limparVariaveis(void)
     pagamento.entregue = '\0';
     pagamento.nmPedido = '\0';
     pagamento.total = '\0';
+
     for (i = 0; i <= 26; i++)
-    {
         pagamento.nomePessoa[i] = '\0';
-    }
+
     for (i = 0; i <= 10; i++)
-    {
         pagamento.formaPagamento[i] = '\0';
-    }
 
     for (i = 0; i <= 20; i++)
-    {
         for (int j = 0; j <= 20; j++)
-        {
             pedido[i].descrProd[j] = '\0';
-        }
-    }
+
+    for (i = 0; i < 17; i++)
+        pagamento.nmCartao[i] = '\0';
 }
