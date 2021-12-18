@@ -20,7 +20,8 @@ struct pedido
     float custoProd;
     int qntdProd;
     float subtotal;
-    bool demora;
+    int demoraMinutos;
+    int tipoProduto;
 } pedido[MAX] = { };
 
 struct pagamento
@@ -34,14 +35,13 @@ struct pagamento
     int demoraTotal;
 } pagamento = { };
 
-typedef struct
+struct FILA
 {
     struct pedido pedido[MAX];
     struct pagamento pagamento;
     int posicaoFila;
-} FILA;
+} fila[MAXNPEDIDOS], aux;
 
-FILA fila[MAXNPEDIDOS], aux;
 
 int main()
 {
@@ -50,10 +50,6 @@ int main()
     void importFila(void);
     void atualizarPosicaoFila(void);
 
-    FILA *d;
-    int qntdMemoria;
-    qntdMemoria = sizeof(FILA);
-    d = (FILA *) malloc(qntdMemoria);
     importNPedido();
     importFila();
     atualizarPosicaoFila();
@@ -118,10 +114,12 @@ void verFila(void) {
     int opc;
     
     do {
+    	system("mode 65, 33");
+    	system("color f0");
         if (cont > 0)
         {
             system("cls");
-            printf("--------------------PEDIDOS NA FILA-------------------\n");
+            printf("\n--------------------------PEDIDOS NA FILA------------------------\n");
             printf("     NM DO PEDIDO        NOME         POSICAO NA FILA\n");
             for (i = 0; i <= nmPedido; i++)
             {
@@ -130,14 +128,14 @@ void verFila(void) {
                     printf("%10d %18s %16d\n", fila[i].pagamento.nmPedido, fila[i].pagamento.nomePessoa, fila[i].posicaoFila);
                 }
             }
-            printf("------------------------------------------------------\n");
-            printf("\nDigite o número do pedido para ver mais detalhes: ");
+            printf("-----------------------------------------------------------------\n");
+            printf("\n Digite o número do pedido para ver mais detalhes: ");
             scanf("%d", &opc);
 
             if (opc == 0)
             {
                 system("cls");
-                printf("Fechando o sistema");
+                printf("\n Fechando o sistema");
                 getch();
                 sair = true;
             }
@@ -145,8 +143,9 @@ void verFila(void) {
             else if (fila[opc].pagamento.total == 0)
             {
                 system("cls");
-                printf("Número inválido.\n");
-                printf("...Aperte qualquer tecla para continuar...");
+                system("color c7");
+                printf("\n Número inválido.\n");
+                printf(" ...Aperte qualquer tecla para continuar...");
                 getch();
             }
             else
@@ -156,7 +155,8 @@ void verFila(void) {
         }
         else {
             system("cls");
-            printf("Não há pedidos na fila");
+            system("color c7");
+            printf("\n Não há pedidos na fila");
             sair = true;
         }
     } while (sair == false);
@@ -167,7 +167,7 @@ void verDetalhes(int x){
     void prepararPedido(int x);
     void verFila(void);
 
-    printf("\n\n----------------Lançamentos do pedido----------------\n");
+    printf("\n\n----------------------Lançamentos do pedido---------------------\n");
     printf("     COD  NOME DO PRODUTO    QUANTIDADE    SUBTOTAL\n");
     for (i = 0; i < 20; i++)
     {
@@ -177,23 +177,25 @@ void verDetalhes(int x){
                    fila[x].pedido[i].qntdProd, fila[x].pedido[i].subtotal);
         }
     }
-    printf("------------------------------------------------------\n");
-    printf("                                     Total: %.2f\n", fila[x].pagamento.total);
+    printf("                                    Total: %.2f\n", fila[x].pagamento.total);
     printf("            Tempo de preparo previsto: %d minutos\n", fila[x].pagamento.demoraTotal);
-    printf("------------------------------------------------------\n");
-    printf("Deseja preparar o pedido? ( 0- Não || 1- Sim )\n");
-
+    printf("-----------------------------------------------------------------\n");
+    printf("\n Deseja preparar o pedido? ( ENTER = Sim || ESQ = N�o )\n ");
+    do {
+    	
     opc = getch();
     switch (opc)
     {
-    case '0':
-        break;
-    case '1':
-        prepararPedido(x);
-        break;
-    default:
-        break;
-    }
+	    case 27:
+	        break;
+	    case 13:
+	        prepararPedido(x);
+	        break;
+	    default:
+	        break;
+	    }
+	} while (opc != 27 && opc != 13);
+    
 }
 
 void prepararPedido(int x) {
@@ -202,27 +204,53 @@ void prepararPedido(int x) {
     void atualizarPosicaoFila(void);
     if (fila[x].posicaoFila == 1) {
         fila[x].pagamento.entregue = true;
-        printf("Separando ingredientes (10x acelerado)\n");
+        printf("Preparando pedido (20x acelerado)\n\n");
         for (i = 0; i < 20; i++)
         {
             if (fila[x].pedido[i].qntdProd > 0)
             {
+                
                 for (j = 0; j < fila[x].pedido[i].qntdProd; j++)
                 {
-                    printf("Preparando %s.\n", fila[x].pedido[i].descrProd);
-                    Sleep(2000);
+                    if (fila[x].pedido[i].tipoProduto == 1 || fila[x].pedido[i].tipoProduto == 4)
+                    {
+                        printf(" Separando ingredientes...\n");
+                        Sleep(666);
+                        printf(" Preparando %s.\n", fila[x].pedido[i].descrProd);
+                        Sleep(666);
+                        printf(" %s ficou pronto!!\n\n", fila[x].pedido[i].descrProd);
+                        Sleep(666);
+                    }
+                    if (fila[x].pedido[i].tipoProduto == 2)
+                    {
+                        printf(" Pegando %s na geladeira.\n\n", fila[x].pedido[i].descrProd);
+                        Sleep(1000);
+                    }
+                    if (fila[x].pedido[i].tipoProduto == 3)
+                    {
+                        printf(" Separando ingredientes...\n");
+                        Sleep(500);
+                        printf(" Batendo %s.\n\n", fila[x].pedido[i].descrProd);
+                        Sleep(500);
+                    }
                 }
-                
-            }
-            
+            } 
         }
-        printf("Pedido número %d entregue com sucesso.\n", x);
+        printf(" Aperte alguma tecla para entregar o pedido ");
+        getch();
+        for (i = 0; i < 3; i++)
+        {
+            printf(". ");
+            Sleep(1000);
+        }
+        
+        printf("\n\n Pedido número %d entregue com sucesso!\n", x);
         exportFila();
         atualizarPosicaoFila();
         getch();
     }
     else {
-        printf("\nO pedido número %d não é o primeiro na lista de espera.", x);
+        printf("\n O pedido número %d não é o primeiro na lista de espera.", x);
         getch();
     }
 }
