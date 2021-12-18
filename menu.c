@@ -6,10 +6,10 @@
 #include <windows.h>
 
 #define MAX 20
-#define MAXQNTD 10 /* Defines usados para determinar o tamanho dos vetores */
 
 int qntd, i = 0;
 int nmPedido; /* Variaveis globais */
+bool pago;
 
 struct produto
 {
@@ -17,6 +17,7 @@ struct produto
     char descrProd[20]; /* Estrutura do cardapio onde o codigo do produto é o valor do vetor */
     float custoProd;
     int demoraMinutos;
+    int tipoProduto;
 } cardapio[MAX];
 
 struct pedido
@@ -27,6 +28,7 @@ struct pedido
     int qntdProd;
     float subtotal;
     int demoraMinutos;
+    int tipoProduto;
 } pedido[MAX] = {};
 
 struct pagamento
@@ -123,9 +125,18 @@ void exportPagamento(void)
 {
     FILE *Arq;
 
-    Arq = fopen("PAGAMENTOS.DAT", "ab");
+    Arq = fopen("PAGAMENTOS.DAT", "a+b");
 
     fwrite(&pagamento, sizeof(pagamento), 1, Arq);
+    fclose(Arq);
+}
+
+void exportFila(void)
+{
+    FILE *Arq;
+    Arq = fopen("FILA.DAT", "ab"); /* export na struct fila */
+
+    fwrite(&fila, sizeof(fila), 1, Arq);
     fclose(Arq);
 }
 
@@ -134,18 +145,18 @@ void verCardapio(void)
     int i;
     system("cls");
 
-    printf("nm do pedido: %d\n", nmPedido);
-    printf("\n___________________________MENU________________________\n");
-    printf("\n  COD     DESCRICAO      VALOR (R$)   DEMORA EM MINUTOS");
-    printf("\n_______________________________________________________\n");
+    printf(" nm do pedido: %d\n", nmPedido);
+    printf("\n------------------------------MENU-------------------------------\n");
+    printf("  COD      DESCRICAO          VALOR (R$)       DEMORA EM MINUTOS");
+    printf("\n-----------------------------------------------------------------");
     for (i = 0; i < MAX; i++)
     {
         if (cardapio[i].codProd != 0)
         { /* mostra o cardapio */
-            printf("\n  %-7i %-15s R$ %.2f %10d", cardapio[i].codProd, cardapio[i].descrProd, cardapio[i].custoProd, cardapio[i].demoraMinutos);
+            printf("\n  %-8i %-19s R$ %.2f %15d", cardapio[i].codProd, cardapio[i].descrProd, cardapio[i].custoProd, cardapio[i].demoraMinutos);
         }
     }
-    printf("\n______________________________________________________\n");
+    printf("\n-----------------------------------------------------------------\n");
 }
 
 void opcoesPedido(void)
@@ -156,14 +167,19 @@ void opcoesPedido(void)
     void cobranca(void);
     void carrinho(void);
     void verCardapio(void);
+    
     do
     {
+    	system("mode 65, 34");
+    	system("color f0");	
         verCardapio();
         carrinho();
+        pago = false;
 
-        printf("\nOpções do pedido: ");
-        printf("\n(1)- Incluir um item\n(2)- Remover um item\n(3)- Finalizar pedido\n(ESQ)- Sair ");
+        printf("\n Opções do pedido: ");
+        printf("\n 1 - Incluir um item\n 2 - Remover um item\n 3 - Finalizar pedido\n ESQ - Sair ");
         opc = getch();
+
         switch (opc)
         {
         case '1':
@@ -180,8 +196,9 @@ void opcoesPedido(void)
             break;
         default:
             system("cls");
-            printf("Opção inválida\n");
-            printf("...Aperte qualquer tecla para continuar...");
+            system("color c7");
+            printf("\n Opção inválida\n");
+            printf(" ...Aperte qualquer tecla para continuar...\n ");
             getch();
             break;
         }
@@ -199,49 +216,52 @@ void incluirItem(void)
     int i, j, cod, qntd;
     float total;
     char opc, continuar;
+    bool voltar = false;
 
     do
     {
         system("cls");
-
+		system("color f0");
         verCardapio();
         carrinho();
 
-        printf("\nQual o codigo do item desejado? 0 para voltar.\n");
+        printf("\n Qual o codigo do item desejado? 0 para voltar.\n ");
         fflush(stdin);
         scanf("%d", &cod);
         if (cod <= 0)
         { /* se o codigo for 0 ou menor que 0 voltará para a tela inicial */
             system("cls");
-            printf("INCLUSÃO CANCELADA\n");
-            printf("Retornando para as opções.\n");
-            printf("...Pressione qualquer tecla...");
+            printf("\n INCLUSÃO CANCELADA\n");
+            printf(" Retornando para as opções.\n");
+            printf(" ...Aperte qualquer tecla para continuar...\n ");
+            voltar = true;
             getch();
         }
-        else if (cardapio[cod].custoProd == 0)
+        else if (cardapio[cod].custoProd == 0 || cod > MAX)
         {
-            printf("O código não é atribuido a um item");
+            printf("\n O código não é atribuido a um item");
             getch(); /* se o item do codigo selecionado nao tiver valor, ele não foi listado */
         }
         else
         {
-            printf("\nQual a quantidade do item desejado? 0 para voltar.\n");
+            printf("\n Qual a quantidade do item desejado? 0 para voltar.\n ");
             fflush(stdin);
             scanf("%d", &qntd);
             if (qntd <= 0)
             { /* quantidade 0 = voltar */
                 system("cls");
-                printf("INCLUSÃO CANCELADA\n");
-                printf("Retornando para as opções.\n");
-                printf("...Pressione qualquer tecla...");
+                printf("\n INCLUSÃO CANCELADA\n");
+                printf(" Retornando para as opções.\n");
+                printf(" ...Aperte qualquer tecla para continuar...\n ");
+                voltar = true;
                 getch();
             }
             else
             {
                 pedido[cod].qntdProd += qntd; /* adiciona a quantidade selecionada na struct pedido */
-                if (pedido[cod].qntdProd > MAXQNTD)
+                if (pedido[cod].qntdProd > 12)
                 { /* a quantidade máxima não pode passar de 10*/
-                    printf("\nQuantidade de itens por código não pode ultrapassar 10\n");
+                    printf("\n Quantidade de itens por código não pode ultrapassar 10\n");
                     pedido[cod].qntdProd -= qntd; /* e é retirado a quantidade selecionada */
                     getch();
                 }
@@ -252,28 +272,31 @@ void incluirItem(void)
                     strcpy(pedido[cod].descrProd, cardapio[cod].descrProd);
                     pedido[cod].subtotal = cardapio[cod].custoProd * pedido[cod].qntdProd;
                     pedido[cod].demoraMinutos = cardapio[cod].demoraMinutos;
+                    pedido[cod].tipoProduto = cardapio[cod].tipoProduto;
                     verificaValorTotal(); /* verifica o valor total, fiz uma funcao para usar em diversas partes a fim de
-                  /* evitar bugs com valores totais aleatorios */
-
-                    confirmarEscolha(cod, pedido[cod].descrProd, pedido[cod].custoProd, pedido[cod].qntdProd, qntd);
-                    /* os itens selecionados são jogados na funcao confirmar escolha para mostrar e confirmar o lancamento */
-                    printf("Confirma a escolha? (ENTER = Sim || ESQ = Não)\n");
-                    fflush(stdin);
-                    opc = getch();
+                    /* evitar bugs com valores totais aleatorios */
                     do
                     {
+                        confirmarEscolha(cod, pedido[cod].descrProd, pedido[cod].custoProd, pedido[cod].qntdProd, qntd);
+                        /* os itens selecionados são jogados na funcao confirmar escolha para mostrar e confirmar o lancamento */
+                        printf(" Confirma a escolha? (ENTER = Sim || ESQ = Não)\n ");
+                        fflush(stdin);
+                        opc = getch();
+
                         switch (opc)
                         {
                         case 13:
                             system("cls");
-                            printf("Lancamento confirmado com sucesso.\n");
-                            printf("...Aperte qualquer tecla para continuar...\n");
+                            system("color 27");
+                            printf("\n Lancamento confirmado com sucesso.\n");
+                            printf(" ...Aperte qualquer tecla para continuar...\n ");
                             getch();
                             break;
                         case 27:
                             system("cls");
-                            printf("Lancamento cancelado com sucesso.\n");
-                            printf("...Aperte qualquer tecla para continuar...\n");
+                            system("color c7");
+                            printf("\n Lancamento cancelado com sucesso.\n");
+                            printf(" ...Aperte qualquer tecla para continuar...\n ");
                             getch();
                             limparLancamento(cod, qntd); /* caso o lancamento seja cancelado é necessario limpar as variaveis modificadas */
                             break;
@@ -282,15 +305,22 @@ void incluirItem(void)
                 }
             }
         }
-    } while (cod != 0 && qntd != 0);
+    } while (voltar == false);
 }
 
 void limparLancamento(int cod, int qntdAUX)
 {
+	void limparItens(int cod, bool limparTodos);
     int i;
-
-    pedido[cod].qntdProd -= qntdAUX; /* funcao para limpar as variaveis em caso de rejeicao na confirmacao do lancamento */
-    pedido[cod].subtotal -= qntdAUX * cardapio[cod].custoProd;
+    if (pedido[cod].qntdProd > 0)
+    {
+        pedido[cod].qntdProd -= qntdAUX; /* funcao para limpar as variaveis em caso de rejeicao na confirmacao do lancamento */
+        pedido[cod].subtotal -= qntdAUX * cardapio[cod].custoProd;
+    }
+    else
+    {
+        limparItens(cod, false);
+    }
 }
 
 void verificaValorTotal(void)
@@ -304,68 +334,65 @@ void verificaValorTotal(void)
 
 void removerItem(void)
 {
+	void limparItens(int cod, bool limparTodos);
     void carrinho(void);
     int cod, i;
     char opc;
-    bool voltar;
+    bool voltar, limparTodos;
 
     if (pagamento.total > 0)
     {
         do
         {
             system("cls");
+            system("mode 65, 20");
+            system("color f0");
             carrinho();
 
-            printf("\nQual o código do item que deseja remover?\n");
-            printf("(-1) Remover tudo\n");
-            printf("(0)  Voltar\n");
+            printf("\n Digite o cod que deseja remover (-1 = Remover tudo||0 = Voltar )\n ");
             scanf("%d", &cod); /* selecao do codigo do pedido que deseja remover */
             if (cod == 0)
             {
                 system("cls"); /* cod == 0 para sair */
-                printf("Retornando para o menu de opções\n");
-                printf("...Aperte qualquer tecla para voltar");
+                printf("\n Retornando para o menu de opções\n");
+                printf(" ...Aperte qualquer tecla para voltar...\n ");
                 voltar = true;
                 getch();
             }
 
             else if (cod < 0)
             {
+            	printf("\n Deseja mesmo remover tudo? (ENTER = Sim || ESQ = Não)\n ");
                 do
                 {
-                    printf("\nDeseja mesmo remover tudo?");
                     opc = getch(); /* ccaso queira remover todos os lancamentos entao use um valor menor que 0 */
 
                     switch (opc)
                     {
                     case 13:
                         system("cls");
-                        printf("Itens removidos com sucesso\n");
-                        printf("...Aperte qualquer tecla para voltar");
-
-                        for (cod = 0; cod < MAX; cod++)
-                        {
-                            pedido[cod].qntdProd = 0; /* limpa o pedido retirado */
-                            pedido[cod].subtotal = 0;
-                        }
+                        system("color 27");
+                        printf("\n Itens removidos com sucesso\n");
+                        printf(" ...Aperte qualquer tecla para voltar...\n ");
+                        voltar = true;
+                        limparItens(cod, true);
+                        getch();
                         break;
                     case 27:
                         system("cls");
-                        printf("Remoção cancelada.\n");
-                        printf("...Aperte qualquer tecla para voltar\n");
+                        system("color c7");
+                        printf("\n Remoção cancelada.\n");
+                        printf(" ...Aperte qualquer tecla para voltar...\n");
+                        voltar = true;
                         getch();
-                    default:
-                        system("cls");
-                        printf("Opção inválida");
-                        getch();
-                        break;
                     }
                 } while (opc != 13 && opc != 27);
             }
             else if (cardapio[cod].custoProd == 0)
             {
                 system("cls"); /* verifica se o codigo selecionado tem valor estabelecido */
-                printf("Código inválido");
+                system("color c7");
+                printf("\n Código inválido");
                 getch();
             }
 
@@ -374,43 +401,39 @@ void removerItem(void)
                 if (pedido[cod].qntdProd == 0)
                 {
                     system("cls"); /* se o codigo selecionado pertencer a um item, mas ele não foi selecionado previamente */
-                    printf("Esse item tem 0 de quantidade");
+                    system("color c7");
+                    printf("\n Esse item tem 0 de quantidade");
                     getch();
                 }
                 else
                 {
+                	printf("\n Deseja mesmo remover o item? (ENTER = Sim || ESQ = Não)\n ");
                     do
                     {
-                        printf("\nDeseja mesmo remover o item? (ENTER = Sim || ESQ = Não)\n");
                         opc = getch();
-
                         switch (opc)
                         {
                         case 13:
                             system("cls");
-                            printf("O item foi removido com sucesso.\n");
-                            printf("...Aperte qualquer tecla para voltar\n");
+                            system("color 27");
+                            printf("\n O item foi removido com sucesso.\n");
+                            printf(" ...Aperte qualquer tecla para voltar...\n");
                             pagamento.total -= pedido[cod].subtotal; /* zera o total e tambem o subtotal de cada pedido */
-                            pedido[cod].qntdProd = 0;                /* e tambem a quantidade */
-                            pedido[cod].subtotal = 0;
+                            limparItens(cod, false);
+                            voltar = true;
                             getch();
                             break;
 
                         case 27:
                             system("cls");
-                            printf("Remoção de item cancelada.\n");
-                            printf("...Aperte qualquer tecla para voltar");
+                            system("color c7");
+                            printf("\n Remoção de item cancelada.\n");
+                            printf(" ...Aperte qualquer tecla para voltar...");
                             voltar = true;
                             getch();
                             break;
-
-                        default:
-                            printf("Opção inválida");
-                            getch();
-                            break;
                         }
-
-                    } while (voltar == false);
+                    } while (opc != 13 && opc != 27);
                 }
             }
         } while (voltar == false);
@@ -418,9 +441,41 @@ void removerItem(void)
     else
     {
         system("cls");
-        printf("Não há itens a remover.\nPressione qualquer tecla para voltar.\n");
+        system("color c7");
+        printf("\n Não há itens a remover.\n Pressione qualquer tecla para voltar.\n ");
         getch();
     }
+}
+
+void limparItens(int cod, bool limparTodos){
+	int j;
+	if (limparTodos == false)
+	{
+		pedido[cod].qntdProd = '\0';
+	    pedido[cod].demoraMinutos = '\0';
+	    pedido[cod].tipoProduto = '\0';
+	    pedido[cod].codProd = '\0';
+	    pedido[cod].subtotal = '\0';
+	    pedido[cod].custoProd = '\0';
+	    for (i = 0; i < 20; i++)
+	        pedido[cod].descrProd[i] = '\0';
+	}
+	else
+	{
+		for (i = 0; i < 20; i++)
+    	{	
+	        pedido[i].codProd = '\0';
+	        pedido[i].custoProd = '\0';
+	        pedido[i].demoraMinutos = '\0';
+	        pedido[i].qntdProd = '\0';
+	        pedido[i].subtotal = '\0';
+	        pedido[i].tipoProduto = '\0';
+    	}
+    	
+    	for (i = 0; i <= 20; i++)
+	        for (j = 0; j <= 20; j++)
+	            pedido[i].descrProd[j] = '\0';
+	}
 }
 
 void carrinho(void)
@@ -428,7 +483,7 @@ void carrinho(void)
     void verificaValorTotal(void);
     int i = 0;
     int primeiro = 0;
-    
+
     verificaValorTotal();
 
     for (i = 0; i < MAX; i++)
@@ -438,21 +493,21 @@ void carrinho(void)
             if (primeiro == 0)
             { /* verifica se há algum item selecionado, para não mostrar o topo do carrinho
 sem necessidade */
-                printf("--------------------------CARRINHO-------------------------------\n");
+                printf("\n--------------------------CARRINHO-------------------------------\n");
+                printf("  Produto         Valor da unidade   Quantidade    Subtotal      \n");
+                printf("-----------------------------------------------------------------\n");
             }
             primeiro = 1;
-            printf("| Produto         Valor da unidade   Quantidade    Subtotal     |\n");
-            printf("| (%d)- %s        %.2f            %d          %.2f      |\n", pedido[i].codProd,
+            printf("   %-2d - %-18s %-14.2f %-10d %-10.2f  ", pedido[i].codProd,
                    pedido[i].descrProd,
                    pedido[i].custoProd,
                    pedido[i].qntdProd,
                    pedido[i].subtotal);
-            printf("-----------------------------------------------------------------\n");
         }
     }
     if (pagamento.total > 1)
     { /* tambem é verificado se há itens lancados para não mostrar o total sem motivo */
-        printf("| TOTAL   =           %.2f                                    |\n", pagamento.total);
+        printf("                                       TOTAL   =    %-6.2f       \n", pagamento.total);
         printf("-----------------------------------------------------------------\n");
     }
 }
@@ -462,31 +517,33 @@ void confirmarEscolha(int cod, char *nome, float valorUnitario, int qntd, int qn
     char opc;
 
     system("cls"); /* funcao usada no incluirItem para confirmacao da selecao do item */
-    printf("--------------------------------\n");
-    printf("Produto escolhido: (%d)- %s \n", cod, nome);
-    printf("Valor da unidade: %.2f\n", valorUnitario);
-    printf("Quantidade: %d\n", qntd);
-    printf("Subtotal: %.2f\n", (float)valorUnitario * qntd);
-    printf("--------------------------------\n\n");
+    printf("\n-----------------------------------------------------------------\n");
+    printf(" Produto escolhido: %d - %s \n", cod, nome);
+    printf(" Valor da unidade: %.2f\n", valorUnitario);
+    printf(" Quantidade: %d\n", qntd);
+    printf(" Subtotal: R$ %.2f\n", (float)valorUnitario * qntd);
+    printf("-----------------------------------------------------------------\n\n");
 }
 
 void cobranca(void)
 {
     void formasPagamento(void);
+    system("mode 65, 20");
+    system("color f0");
 
     if (pagamento.total > 0)
     { /* verifica se há pedidos listados para permitir finalizar o pedido */
         system("cls");
-        printf("Entrando em formas de pagamento\n");
-        printf("...Aperte alguma tecla para continuar...");
+        printf("\n Entrando em formas de pagamento\n");
+        printf(" ...Aperte alguma tecla para continuar...\n ");
         getch();
         formasPagamento();
     }
     else
     {
         system("cls");
-        printf("Não há nenhum pedido lançado.\n");
-        printf("...Pressione qualquer tecla para continuar...");
+        printf("\n Não há nenhum pedido lançado.\n");
+        printf(" ...Pressione qualquer tecla para continuar...\n ");
         getch();
     }
 }
@@ -500,14 +557,14 @@ void formasPagamento(void)
     bool finalizarPedido(void);
     char opc;
     bool voltar = false;
-    bool pago = false;
 
     do
     {
         system("cls");
+        system("color f0");
         carrinho();
-        printf("Qual o método de pagamento? \n");
-        printf("(1)- Dinheiro  \n(2)- xerecard  \n(3)- Cheque\n(ESQ)- Voltar\n"); /* selecao do metodo de pagamento */
+        printf(" Qual o método de pagamento? \n");
+        printf(" 1 - Dinheiro  \n 2 - Cartão de Crédito \n 3 - Cheque\n ESQ - Voltar\n "); /* selecao do metodo de pagamento */
         fflush(stdin);
         opc = getch();
 
@@ -524,19 +581,17 @@ void formasPagamento(void)
             break;
         case 27:
             system("cls");
-            printf("Voltando ao menu principal\n");
-            printf("...Aperte qualquer tecla para continuar...\n");
+            printf("\n Voltando ao menu principal\n");
+            printf(" ...Aperte qualquer tecla para continuar...\n");
             getch();
             voltar = true;
             break;
         default:
-            printf("Opção inválida");
+            printf("\n Opção inválida");
             getch();
             break;
         }
-        if (finalizarPedido)
-            pago = true;
-        
+
     } while (voltar == false && pago == false);
 }
 
@@ -547,32 +602,34 @@ void pagamentoDinheiro(void)
     int i;
     bool voltar = false;
     char opc;
-    
+
     do
     {
         system("cls");
+        system("color f0");
         carrinho();
-        printf("\nDigite o valor total das cedulas: ( 0 - Voltar )\n\n");
+        printf("\n Digite o valor total das cedulas: ( 0 - Voltar )\n\n ");
         fflush(stdin);
         scanf("%f", &cedula); /* entrada do valor das cedulas */
 
         troco = cedula - pagamento.total; /* calculo do troco */
         if (cedula == 0)                  /* caso o valor seja 0 == voltar */
         {
-            printf("Voltando para formas de pagamento\n");
-            printf("...Aperte qualquer tecla para continuar...");
+        	system("cls");
+            printf("\n Voltando para formas de pagamento\n");
+            printf(" ...Aperte qualquer tecla para continuar...");
             getch();
             voltar = true;
-        }   
+        }
 
         else if (cedula >= pagamento.total)
-        {  
+        {
             system("cls");
-            printf("Valor total: %.2f\n\n", pagamento.total);
-            printf("Valor entregue: %.2f\n\n", cedula); 
+            printf("\n Valor total: %.2f\n\n", pagamento.total);
+            printf(" Valor entregue: %.2f\n\n", cedula);
             if (troco > 0)
-                printf("O troco é de %.2f\n\n", troco); /* caso entre um valor valido então mostra o troco e exporta a struct fila */
-            printf("Confirmar pedido? (ENTER = Sim || ESQ = Não)");
+                printf(" O troco é de %.2f\n\n", troco); /* caso entre um valor valido então mostra o troco e exporta a struct fila */
+            printf(" Confirmar pedido? (ENTER = Sim || ESQ = Não) ");
             opc = getch(); /* e tambem mostra o comprovante */
             switch (opc)
             {
@@ -580,27 +637,30 @@ void pagamentoDinheiro(void)
                 pagamento.nmPedido = nmPedido;
                 strcpy(pagamento.formaPagamento, "Dinheiro"); /* copia os itens selecionados para a struct pagamento */
 
-                finalizarPedido();
+                pago = finalizarPedido();
                 voltar = true;
                 break;
             case 27:
                 system("cls");
-                printf("Voltando para formas de pagamento\n");
-                printf("...Aperte qualquer tecla para continuar");
+                system("color c7");
+                printf("\n Pagamento cancelado.\n");
+                printf(" Voltando para formas de pagamento\n");
+                printf(" ...Aperte qualquer tecla para continuar... ");
                 voltar = true;
                 getch();
                 break;
 
             default:
                 system("cls");
-                printf("Opção inválida");
+                system("color c7");
+                printf("\n Opção inválida ");
                 getch();
                 break;
             }
         }
         else
         {
-            printf("\nValor insuficiente. \n");
+            printf("\n Valor insuficiente. \n ");
             getch();
         }
     } while (voltar == false);
@@ -618,25 +678,26 @@ void pagamentoCartao(void)
     do
     {
         system("cls");
-        printf("Digite os números no verso do cartão\n");
+        system("color f0");
+        printf("\n Digite os números no verso do cartão ( 0 = Voltar )\n ");
         gets(pagamento.nmCartao);
 
-        if (pagamento.nmCartao == 0)
+        if (pagamento.nmCartao[0] == 0)
         {
             system("cls");
-            printf("Retornando aos métodos de pagamento\n");
-            printf("...Aperte qualquer tecla para continuar\n");
-            voltar = true;
+            printf("\n Retornando aos métodos de pagamento\n");
+            printf(" ...Aperte qualquer tecla para continuar...\n");
             getch();
+            break;
         }
 
         else if (validarCartao(pagamento.nmCartao))
         {
             system("cls");
             mascaraCartao(pagamento.nmCartao);
-            printf("Valor total: %.2f\n\n", pagamento.total);
-            printf("Cartão: %s \n\n", pagamento.nmCartao);
-            printf("Confirmar pedido? (ENTER = Sim || ESQ = Não)\n\n");
+            printf("\n Valor total: %.2f\n\n", pagamento.total);
+            printf(" Cartão: %s \n\n", pagamento.nmCartao);
+            printf(" Confirmar pedido? (ENTER = Sim || ESQ = Não)\n\n ");
             opc = getch();
 
             switch (opc)
@@ -644,19 +705,22 @@ void pagamentoCartao(void)
             case 13:
                 pagamento.nmPedido = nmPedido;
                 strcpy(pagamento.formaPagamento, "Cartão"); /* copia os itens selecionados para a struct pagamento */
-                finalizarPedido();
+                pago = finalizarPedido();
                 voltar = true;
                 break;
             case 27:
                 system("cls");
-                printf("Voltando para formas de pagamento\n");
-                printf("...Aperte qualquer tecla para continuar...\n");
+                system("color c7");
+                printf("\n Pagamento cancelado.\n");
+                printf(" Voltando para formas de pagamento\n");
+                printf(" ...Aperte qualquer tecla para continuar...\n");
                 voltar = true;
                 getch();
                 break;
             default:
                 system("cls");
-                printf("Opção inválida");
+                system("color c7");
+                printf("\n Opção inválida");
                 getch();
                 break;
             }
@@ -665,15 +729,17 @@ void pagamentoCartao(void)
         else
         {
             system("cls");
-            printf("Número do cartão inválido.\n\n");
-            printf("Cheque se há 16 números\n\n");
-            printf("...Aperte qualquer tecla para tentar novamente...\n");
+            system("color c7");
+            printf("\n Número do cartão inválido.\n\n");
+            printf(" Cheque se há 16 números\n\n");
+            printf(" ...Aperte qualquer tecla para tentar novamente...\n ");
             getch();
         }
     } while (voltar == false);
 }
 
-bool validarCartao(char nmCartao[]) {
+bool validarCartao(char nmCartao[])
+{
     int nmValido = 0;
 
     for (i = 0; i <= 15; i++)
@@ -686,7 +752,8 @@ bool validarCartao(char nmCartao[]) {
         return false;
 }
 
-void mascaraCartao(char nmCartao[]) {
+void mascaraCartao(char nmCartao[])
+{
     for (i = 4; i < 12; i++)
     {
         nmCartao[i] = '*';
@@ -696,22 +763,23 @@ void mascaraCartao(char nmCartao[]) {
 void pagamentoCheque(void)
 {
     bool finalizarPedido(void);
-    int i, valorCheque;
+    int i;
+    float valorCheque;
     char opc;
 
     bool voltar = false;
-    system("cls");
 
     do
     {
+    	system("cls");
         carrinho();
-        printf("\nDigite o valor total do cheque: ( 0 - Voltar )\n\n");
+        printf("\n Digite o valor total do cheque: ( 0 - Voltar )\n\n ");
         scanf("%f", &valorCheque); /* exatamente a mesma logica do pagamento em dinheiro */
 
         if (valorCheque == 0)
         {
             system("cls");
-            printf("Voltando para formas de pagamento\n");
+            printf("\n Voltando para formas de pagamento\n");
             printf("...Aperte qualquer tecla para continuar...");
             voltar = true;
             getch();
@@ -720,27 +788,27 @@ void pagamentoCheque(void)
         else if (valorCheque >= pagamento.total)
         {
             system("cls");
-            printf("Valor total: %.2f\n\n", pagamento.total);
-            printf("Confirmar pedido? (ENTER = Sim || ESQ = Não)");
+            printf("\n Valor do cheque: %.2f\n\n", valorCheque);
+            printf(" Valor do pedido: %.2f\n\n", pagamento.total);
+            printf(" Confirmar pedido? (ENTER = Sim || ESQ = Não)\n\n ");
             opc = getch(); /* e tambem mostra o comprovante */
             switch (opc)
             {
             case 13:
                 pagamento.nmPedido = nmPedido;
                 strcpy(pagamento.formaPagamento, "Cheque"); /* copia os itens selecionados para a struct pagamento */
-                finalizarPedido();
+                pago = finalizarPedido();
                 voltar = true;
                 break;
             case 27:
                 system("cls");
-                printf("Voltando para formas de pagamento\n");
-                printf("...Aperte qualquer tecla para continuar");
+                printf("\n Voltando para formas de pagamento\n");
+                printf(" ...Aperte qualquer tecla para continuar...");
                 voltar = true;
                 getch();
                 break;
             default:
-                system("cls");
-                printf("Opção inválida");
+                printf("\n Opção inválida");
                 getch();
                 break;
             }
@@ -765,54 +833,65 @@ bool finalizarPedido(void)
     do
     {
         system("cls");
-        printf("Digite seu nome, para chamarmos após o preparo do pedido\n");
+        printf("\n Digite seu nome, para chamarmos após o preparo do pedido\n ");
         fflush(stdin); /* entrada do nome do usuario na struct pagamento */
         gets(pagamento.nomePessoa);
     } while (!validarNome(pagamento.nomePessoa));
-    
+
     exportPagamento();
     armazenarFila();
     mostrarComprovante();
 
     system("cls");
-    printf("Pedido realizado com sucesso!\n\n");
+    system("color 27");
+    printf("\n Pedido realizado com sucesso!\n\n");
     if (pagamento.demoraTotal > 4)
     {
-        printf("O tempo de preparo é estimado em %d minutos\n", pagamento.demoraTotal);
-        printf("Por favor ir para a fila de espera\n");
+        printf("\n O tempo de preparo é estimado em %d minutos\n", pagamento.demoraTotal);
+        printf(" Por favor ir para a fila de espera\n ");
         getch();
     }
+
     else
     {
-        printf("Não é necessario ir à fila de espera\n");
-        printf("Em instantes seu pedido será entregue\n");
+        printf("\n Não é necessario ir à fila de espera\n");
+        printf(" Em instantes seu pedido será entregue\n ");
         getch();
     }
-    
+
     for (i = 5; i > 0; i--)
     {
         system("cls");
-        printf("Redirecionando ao menu principal em %d", i);
+        system("color F0");
+        printf("\n Redirecionando ao menu principal em %d", i);
         Sleep(1000);
     }
     importNPedido();
     limparVariaveis();
+
     return true;
-} 
+}
 
-bool validarNome(char nome[]) {
+bool validarNome(char nome[])
+{
     int caractereValido = 0;
-
+    int cont = 0;
     for (i = 0; nome[i] != '\0'; i++)
-        if (nome[i] >= 65 && nome[i] <= 90 || nome[i] >= 97 && nome[i] <= 122)
+    {
+        if (nome[i] >= 65 && nome[i] <= 90 || nome[i] >= 97 && nome[i] <= 122 || nome[i] == 32)
+        {
             caractereValido++;
+        }
+        cont++;
+    }
 
-    if (caractereValido != 0)
+    if (caractereValido == cont && cont != 0)
         return true;
-    else {
-        printf("\nNome inválido\n");
-        printf("Usar letras minúsculas ou maíusculas\n");
-        printf("Não usar números nem caracteres especiais.\n");
+    else
+    {
+        printf("\n\n Nome inválido\n");
+        printf(" Usar letras minúsculas ou maíusculas\n");
+        printf(" Não usar números nem caracteres especiais.\n");
         getch();
         return false;
     }
@@ -839,34 +918,25 @@ void armazenarFila(void)
     }
 }
 
-void exportFila(void)
-{
-    FILE *Arq;
-    Arq = fopen("FILA.DAT", "ab"); /* export na struct fila */
-
-    fwrite(&fila, sizeof(fila), 1, Arq);
-    fclose(Arq);
-}
-
 void mostrarComprovante(void)
 {
     FILE *REL;
     REL = fopen("COMPROVANTE.DAT", "w"); /* o comprovante é gravado no arquivo comprovante.dat e é aberto para vizualicao
     após o pagamento ser efetuado */
     fprintf(REL, "----------------------COMPROVANTE-----------------------\n");
-    fprintf(REL, "| Nm do pedido                Cliente                  |\n");
-    fprintf(REL, "| %-15d %20s                 |\n", nmPedido, pagamento.nomePessoa);
-    fprintf(REL, "| Pedido pago com %-20s                 |\n", pagamento.formaPagamento);
+    fprintf(REL, " Nm do pedido                Cliente                  \n");
+    fprintf(REL, " %-15d %20s                 \n", nmPedido, pagamento.nomePessoa);
+    fprintf(REL, " Pedido pago com %-20s                 \n", pagamento.formaPagamento);
     fprintf(REL, "--------------------------------------------------------\n");
-    fprintf(REL, "| Cod    Nome do Produto    Quantidade    Subtotal     |\n");
+    fprintf(REL, " Cod    Nome do Produto    Quantidade    Subtotal     \n");
 
     for (i = 0; i < 20; i++)
         if (pedido[i].qntdProd > 0)
         {
-            fprintf(REL, "| %d %15s %12d %13.2f         |\n", pedido[i].codProd, pedido[i].descrProd, pedido[i].qntdProd, pedido[i].subtotal);
+            fprintf(REL, " %-2d %15s %12d %13.2f         \n", pedido[i].codProd, pedido[i].descrProd, pedido[i].qntdProd, pedido[i].subtotal);
         }
 
-    fprintf(REL, "|\n|                                   Total: %.2f       |\n", pagamento.total);
+    fprintf(REL, "                                   Total:%2.2f           \n", pagamento.total);
     fprintf(REL, "--------------------------------------------------------\n");
     fclose(REL);
     system("notepad COMPROVANTE.DAT");
@@ -874,6 +944,7 @@ void mostrarComprovante(void)
 
 void limparVariaveis(void)
 {
+    int j;
     for (i = 0; i < 20; i++)
     {
         pedido[i].codProd = '\0';
@@ -881,10 +952,10 @@ void limparVariaveis(void)
         pedido[i].demoraMinutos = '\0';
         pedido[i].qntdProd = '\0';
         pedido[i].subtotal = '\0';
+        pedido[i].tipoProduto = '\0';
     }
     pagamento.demoraTotal = '\0';
     pagamento.entregue = '\0';
-    pagamento.nmPedido = '\0';
     pagamento.total = '\0';
 
     for (i = 0; i <= 26; i++)
@@ -894,7 +965,7 @@ void limparVariaveis(void)
         pagamento.formaPagamento[i] = '\0';
 
     for (i = 0; i <= 20; i++)
-        for (int j = 0; j <= 20; j++)
+        for (j = 0; j <= 20; j++)
             pedido[i].descrProd[j] = '\0';
 
     for (i = 0; i < 17; i++)
